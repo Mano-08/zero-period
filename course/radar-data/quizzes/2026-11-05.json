@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-05",
+  "topics": ["Base case", "Return values in recursion"],
+  "questions": [
+    {
+      "n": 1,
+      "topic": "Base case",
+      "q": "A student writes this. What happens when you call f(0)?",
+      "code": "def f(n):\n    if n == 1:\n        return 1\n    return n * f(n - 1)",
+      "options": {
+        "A": "It returns 1",
+        "B": "It returns 0",
+        "C": "It never reaches the base case and stops with a RecursionError",
+        "D": "It returns None"
+      },
+      "answer": "C",
+      "explain": "f(0) calls f(-1), then f(-2), and so on. n moves away from 1, so the base case is never reached. Choose the base case from the smallest input, n == 0 (Notes p.13, p.17).",
+      "misconception": "The base case is 'the last number you multiply' rather than the smallest input."
+    },
+    {
+      "n": 2,
+      "topic": "Return values in recursion",
+      "q": "What does total([2, 3]) return?",
+      "code": "def total(nums):\n    if nums == []:\n        return 0\n    nums[0] + total(nums[1:])",
+      "options": {
+        "A": "5",
+        "B": "A TypeError: the inner call hands back None because the recursive case never returns",
+        "C": "0",
+        "D": "2"
+      },
+      "answer": "B",
+      "explain": "total([3]) computes 3 + 0 but never returns it, so it hands back None. Then total([2, 3]) tries 2 + None and raises a TypeError. Every path that should produce a value needs a return (Notes p.15, p.8).",
+      "misconception": "Computing a value is the same as returning it."
+    },
+    {
+      "n": 3,
+      "topic": "Base case",
+      "q": "Why does factorial(0) return 1 and not 0?",
+      "options": {
+        "A": "Because 0 is not a valid input",
+        "B": "Because Python's math rules say so",
+        "C": "Because multiplying no numbers leaves 1, and a 0 would make every factorial 0 on the way back up",
+        "D": "Because the recursion stops at 1"
+      },
+      "answer": "C",
+      "explain": "1 is the do-nothing number for multiplication (the empty product). If factorial(0) returned 0, the 0 would be multiplied into every result while unwinding (Notes p.12).",
+      "misconception": "The recursion 'ends at 1', so the base case should be 1."
+    }
+  ]
+}

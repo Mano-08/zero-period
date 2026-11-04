@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Glob",
+      "Grep",
+      "Write(./radar-data/**)",
+      "Edit(./radar-data/**)",
+      "Edit(./teacher-answers.md)"
+    ],
+    "deny": [
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "Read(./.switch/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/**)",
+      "Read(~/.claude/**)",
+      "Read(~/.switch/**)",
+      "Read(//etc/**)",
+      "Edit(./notes/**)",
+      "Edit(./homework/**)",
+      "Edit(./class-info.md)",
+      "Edit(./syllabus.md)",
+      "Edit(./schedule.md)",
+      "Write(./notes/**)",
+      "Write(./homework/**)",
+      "Write(./class-info.md)",
+      "Write(./syllabus.md)",
+      "Write(./schedule.md)"
+    ]
+  }
+}
