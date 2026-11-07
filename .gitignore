@@ -1,0 +1,27 @@
+cd ~/Documents/zero-period
+cat > .gitignore <<'EOF'
+# Secrets: never commit these
+bell.env
+mattermost.env
+*.env
+.env
+*.log
+
+# Switch Console writes each agent's credentials into its working folder
+.switch/
+course/.switch/
+
+# Claude Code's local settings
+.claude/settings.local.json
+course/.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# macOS
+.DS_Store
+EOF
+git status

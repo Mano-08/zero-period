@@ -17,3 +17,7 @@ when there is one plate. So the base case is the empty stack, `n == 0`, and coun
 empty stack gives 0. For factorial, multiplying "no numbers" gives 1. That's why
 `factorial(0)` returns 1 and not 0. If it returned 0, everything would become 0 on the
 way back up.
+
+### 7 Nov 2026 · asked in class
+The base case is the smallest input, `n == 0`. It returns 1 because multiplying by 1
+changes nothing. Return 0 instead and every factorial becomes 0 (p.12).

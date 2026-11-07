@@ -18,6 +18,7 @@ class FakeMattermost(BaseHTTPRequestHandler):
     users: dict[str, dict] = {}
     posts: list[tuple[str, str, str]] = []  # (token, channel, message)
     members: set[tuple[str, str]] = set()
+    open_server = True
 
     def log_message(self, *args):
         pass
@@ -56,17 +57,22 @@ class FakeMattermost(BaseHTTPRequestHandler):
             login = body["login_id"]
             if login == "admin" and body["password"] == "adminpw":
                 return self._send(200, {"id": "admin"}, {"Token": "tok-admin"})
+            if login == "user" and body["password"] == "teacherpw":
+                return self._send(200, {"id": "teacher"}, {"Token": "tok-user"})
             user = FakeMattermost.users.get(login)
             if user and body["password"] == "Radar-demo-2026!":
                 return self._send(200, user, {"Token": f"tok-{login}"})
             return self._send(401, {"message": "bad login"})
         if p == "/api/v4/users":
-            assert auth == "Bearer tok-admin"
+            if not (auth == "Bearer tok-admin" or (auth == "" and FakeMattermost.open_server)):
+                return self._send(403, {"message": "sign-ups are off"})
             user = {"id": "u-" + body["username"], "username": body["username"]}
             FakeMattermost.users[body["username"]] = user
             return self._send(201, user)
         if p == "/api/v4/teams/t1/members" or p == "/api/v4/channels/c1/members":
-            assert auth == "Bearer tok-admin"
+            own = "Bearer tok-" + body["user_id"].removeprefix("u-")
+            if auth not in ("Bearer tok-admin", own):
+                return self._send(403, {"message": "can only add yourself"})
             FakeMattermost.members.add((p, body["user_id"]))
             return self._send(201, {})
         if p == "/api/v4/posts":
@@ -76,8 +82,15 @@ class FakeMattermost(BaseHTTPRequestHandler):
 
 
 @pytest.fixture()
-def mm():
+def mm(tmp_path, monkeypatch):
+    import mm as mmlib
+
+    monkeypatch.setattr(mmlib, "MATTERMOST_ENV", tmp_path / "no-mattermost.env")
+    monkeypatch.setattr(mmlib, "console_data_dirs", lambda: [tmp_path / "no-console"])
+    for key in ("MM_URL", "MM_USER", "MM_PASSWORD", "MM_TEAM"):
+        monkeypatch.delenv(key, raising=False)
     FakeMattermost.users, FakeMattermost.posts, FakeMattermost.members = {}, [], set()
+    FakeMattermost.open_server = True
     httpd = HTTPServer(("127.0.0.1", 0), FakeMattermost)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
@@ -117,3 +130,27 @@ def test_dry_run_posts_nothing(capsys):
     assert seed_class.main(["--dry-run"]) == 0
     out = capsys.readouterr().out
     assert '"messages": 60' in out
+
+
+def test_students_sign_up_with_only_the_teacher_login(mm):
+    # Today's Switch Console keeps the Mattermost admin password to itself, so the
+    # seeder signs in as the teacher and the students sign up on their own.
+    args = ["--mm-url", mm, "--teacher-user", "user", "--teacher-password", "teacherpw",
+            "--team", "switch", "--delay", "0", "--accounts-only"]
+    assert seed_class.main(args) == 0
+    assert len(FakeMattermost.users) == len(seed_class.STUDENTS)
+    assert len(FakeMattermost.members) == 2 * len(seed_class.STUDENTS)
+    assert FakeMattermost.posts == []  # --accounts-only
+
+
+def test_closed_sign_ups_explain_the_admin_option(mm, capsys):
+    FakeMattermost.open_server = False
+    args = ["--mm-url", mm, "--teacher-user", "user", "--teacher-password", "teacherpw",
+            "--team", "switch", "--delay", "0", "--accounts-only"]
+    assert seed_class.main(args) == 1
+    assert "--admin-user" in capsys.readouterr().err
+
+
+def test_no_login_at_all_says_where_to_find_it(mm, capsys):
+    assert seed_class.main(["--mm-url", mm, "--team", "switch"]) == 1
+    assert "Sign-in details" in capsys.readouterr().err

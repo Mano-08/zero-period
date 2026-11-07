@@ -12,14 +12,13 @@ Before seeding, type `!unassign-agent` in the class channel, or the TA will answ
 all 60 messages. After seeding, type `!assign-agent @ta` again.
 
   python3 tools/seed_class.py --dry-run          # print the script and its counts
-  python3 tools/seed_class.py                    # local server: settings found automatically
-  python3 tools/seed_class.py --admin-user admin --admin-password '…' \\
-      --team switch --channel cs12b-class        # or say it all yourself
+  python3 tools/seed_class.py --accounts-only    # just the 18 student logins, no messages
+  python3 tools/seed_class.py                    # the 18 logins, then the 60 messages
 
-On a server Switch Console runs on this computer, the Mattermost admin account,
-team and port are in Console's server settings file. The script finds that file
-in the usual places (or pass --console-env). Switch ignores posts from the admin
-account, which is why the students get accounts of their own.
+It signs in to Mattermost as you (the Sign-in details from Switch Console: Home →
+Messaging apps → Mattermost) to find the class channel. The students sign up on
+their own, which the local Mattermost allows. The login comes from mattermost.env,
+from flags, or from a prompt. See tools/mm.py.
 
 Standard library only.
 """
@@ -28,22 +27,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
-# Where Switch Console keeps its local server's settings (`switchdash` is its data
-# folder name).
-CONSOLE_ENV_CANDIDATES = (
-    Path.home() / "Library/Application Support/switchdash/local-switch-server/.env",  # macOS
-    Path.home() / ".config/switchdash/local-switch-server/.env",  # Linux
-    Path(os.environ.get("APPDATA", "~")).expanduser() / "switchdash/local-switch-server/.env",  # Windows
-)
+from mm import Mattermost, MMError, resolve_login
+
+SeedError = MMError  # the name the rest of this script (and its tests) use
 
 # --------------------------------------------------------------------------- data
 
@@ -158,140 +149,44 @@ SCRIPT: tuple[Line, ...] = (
 )
 
 
-# --------------------------------------------------------------------- mattermost
-
-
-class SeedError(RuntimeError):
-    pass
-
-
-class Mattermost:
-    def __init__(self, base_url: str, token: str | None = None) -> None:
-        self.base = base_url.rstrip("/") + "/api/v4"
-        self.token = token
-
-    def call(
-        self, method: str, path: str, body: Any = None, *, token: str | None = None
-    ) -> tuple[Any, dict[str, str]]:
-        data = json.dumps(body).encode() if body is not None else None
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
-        auth = token or self.token
-        if auth:
-            headers["Authorization"] = f"Bearer {auth}"
-        req = urllib.request.Request(self.base + path, data=data, method=method, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                raw = resp.read()
-                return (json.loads(raw) if raw else None), dict(resp.headers)
-        except urllib.error.HTTPError as err:
-            detail = err.read().decode(errors="replace")[:300]
-            raise SeedError(f"{method} {path} → {err.code}: {detail}") from err
-        except urllib.error.URLError as err:
-            raise SeedError(f"can't reach Mattermost at {self.base} ({err.reason})") from err
-
-    def login(self, login_id: str, password: str) -> str:
-        _, headers = self.call("POST", "/users/login", {"login_id": login_id, "password": password})
-        token = headers.get("Token") or headers.get("token")
-        if not token:
-            raise SeedError(f"login for {login_id} returned no token")
-        return token
-
-    def user_by_username(self, username: str) -> dict[str, Any] | None:
-        try:
-            user, _ = self.call("GET", f"/users/username/{username}")
-            return user
-        except SeedError as err:
-            if "→ 404" in str(err):
-                return None
-            raise
-
-
-def find_channel(mm: Mattermost, team_id: str, wanted: str) -> dict[str, Any]:
-    try:
-        channel, _ = mm.call("GET", f"/teams/{team_id}/channels/name/{wanted}")
-        return channel
-    except SeedError:
-        pass
-    channels, _ = mm.call("GET", f"/teams/{team_id}/channels?per_page=200")
-    for ch in channels or []:
-        if wanted.lower() in (str(ch.get("name")).lower(), str(ch.get("display_name")).lower()):
-            return ch
-    raise SeedError(
-        f"no channel {wanted!r} in that team. Use the channel's URL name (the last part "
-        "of its link in Mattermost)."
-    )
+# --------------------------------------------------------------------- seeding
 
 
 def seed(args: argparse.Namespace) -> None:
-    mm = Mattermost(args.mm_url, args.admin_token)
-    if not args.admin_token:
-        mm.token = mm.login(args.admin_user, args.admin_password)
+    login = resolve_login(
+        mm_url=args.mm_url, user=args.teacher_user, password=args.teacher_password, team=args.team,
+        console_env=args.console_env, admin_user=args.admin_user, admin_password=args.admin_password,
+        admin_token=args.admin_token, teacher_optional=True,
+    )
+    mm = Mattermost(login.url)
+    as_admin = bool(args.admin_token or (login.admin_user and login.admin_password))
+    if args.admin_token:
+        mm.token = args.admin_token
+    elif as_admin:
+        mm.token, _ = mm.login(login.admin_user, login.admin_password)
+    else:
+        mm.token, _ = mm.login(login.user, login.password)
 
-    team, _ = mm.call("GET", f"/teams/name/{args.team}")
-    channel = find_channel(mm, team["id"], args.channel)
-    print(f"seeding #{channel['name']} in team {team['name']}")
+    team = mm.team(login.team)
+    channel = mm.find_channel(team["id"], args.channel)
+    print(f"class channel: #{channel['name']} in team {team['name']} ({login.url})")
 
     tokens: dict[str, str] = {}
     for s in STUDENTS:
-        user = mm.user_by_username(s.username)
-        if user is None:
-            user, _ = mm.call(
-                "POST",
-                "/users",
-                {
-                    "username": s.username,
-                    "email": f"{s.username}@students.example.com",
-                    "password": args.student_password,
-                    "first_name": s.first,
-                    "last_name": s.last,
-                },
-            )
-            print(f"  created {s.username}")
-        mm.call("POST", f"/teams/{team['id']}/members", {"team_id": team["id"], "user_id": user["id"]})
-        mm.call("POST", f"/channels/{channel['id']}/members", {"user_id": user["id"]})
-        tokens[s.username] = mm.login(s.username, args.student_password)
+        _, tokens[s.username] = mm.ensure_student(
+            s.username, args.student_password, s.first, s.last, team["id"], [channel["id"]], as_admin=as_admin
+        )
+    print(f"  {len(STUDENTS)} student accounts ready (password: {args.student_password})")
+
+    if args.accounts_only:
+        print(f"  log in as any of them, e.g. {STUDENTS[0].username}, in a private browser window at {login.url}")
+        return
 
     for i, line in enumerate(SCRIPT, 1):
-        mm.call(
-            "POST",
-            "/posts",
-            {"channel_id": channel["id"], "message": line.text},
-            token=tokens[line.user],
-        )
+        mm.post(tokens[line.user], channel["id"], line.text)
         print(f"  [{i:02d}/{len(SCRIPT)}] {line.user}: {line.text[:70]}")
         time.sleep(args.delay)
     print("done. Now type `!assign-agent @ta` in the class channel, and `@radar morning` on the desk.")
-
-
-def read_console_env(explicit: str | None) -> tuple[Path | None, dict[str, str]]:
-    """The local server's settings, or ({}, None) when there's no such file."""
-    paths = [Path(explicit).expanduser()] if explicit else list(CONSOLE_ENV_CANDIDATES)
-    for path in paths:
-        if path.is_file():
-            values: dict[str, str] = {}
-            for raw in path.read_text(encoding="utf-8").splitlines():
-                line = raw.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, _, value = line.partition("=")
-                    values[key.strip()] = value.strip().strip("'\"")
-            return path, values
-    if explicit:
-        raise SeedError(f"no settings file at {explicit}")
-    return None, {}
-
-
-def fill_from_console(args: argparse.Namespace) -> None:
-    """Fill whatever the user didn't pass from Switch Console's local server settings."""
-    path, env = read_console_env(args.console_env)
-    if not env:
-        return
-    print(f"using local server settings from {path}")
-    if not args.admin_token and not args.admin_password:
-        args.admin_user = args.admin_user or env.get("MATTERMOST_ADMIN_USER")
-        args.admin_password = env.get("MATTERMOST_ADMIN_PASSWORD")
-    args.team = args.team or env.get("MATTERMOST_TEAM_NAME")
-    if args.mm_url is None and env.get("MATTERMOST_HOST_PORT"):
-        args.mm_url = f"http://127.0.0.1:{env['MATTERMOST_HOST_PORT']}"
 
 
 def summary() -> dict[str, Any]:
@@ -312,13 +207,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Seed the class channel with a demo day.")
     parser.add_argument("--console-env", help="Switch Console's local server .env (found automatically)")
     parser.add_argument("--mm-url", default=None, help="Mattermost URL (default http://127.0.0.1:8065)")
-    parser.add_argument("--admin-user", help="Mattermost admin username or email")
-    parser.add_argument("--admin-password", help="Mattermost admin password")
-    parser.add_argument("--admin-token", help="or a Mattermost admin personal access token")
+    parser.add_argument("--teacher-user", help="your Mattermost username (Sign-in details)")
+    parser.add_argument("--teacher-password", help="your Mattermost password (Sign-in details)")
+    parser.add_argument("--admin-user", help="optional: a Mattermost admin, if sign-ups are off")
+    parser.add_argument("--admin-password", help="optional: that admin's password")
+    parser.add_argument("--admin-token", help="optional: or an admin personal access token")
     parser.add_argument("--team", help="team URL name (slug)")
     parser.add_argument("--channel", default="cs12b-class", help="class channel URL name")
     parser.add_argument("--student-password", default="Radar-demo-2026!", help="password for demo students")
     parser.add_argument("--delay", type=float, default=0.6, help="seconds between posts")
+    parser.add_argument("--accounts-only", action="store_true", help="create the student logins, post nothing")
     parser.add_argument("--dry-run", action="store_true", help="print the script and counts, post nothing")
     args = parser.parse_args(argv)
 
@@ -328,13 +226,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(summary(), indent=2))
         return 0
     try:
-        fill_from_console(args)
-        args.mm_url = args.mm_url or "http://127.0.0.1:8065"
-        if not args.team or not (args.admin_token or (args.admin_user and args.admin_password)):
-            parser.error(
-                "couldn't find the local server settings: pass --team and admin credentials "
-                "(--admin-user/--admin-password or --admin-token), or --console-env"
-            )
         seed(args)
         return 0
     except SeedError as err:

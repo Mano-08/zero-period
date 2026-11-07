@@ -6,9 +6,10 @@ Aim to submit by **8 pm on Nov 7**. Everything after that is buffer.
 
 - [ ] Install Docker Desktop and Switch Console, start a local server (bundled Mattermost).
 - [ ] Claude Code installed and signed in on the same machine.
-- [ ] Import `template/confusion-radar.template.yaml` and create it with `course_dir` = this repo's `course/`.
+- [ ] Unzip the repo into your home folder and run `bash setup.sh`.
+- [ ] Import `template/zero-period.template.yaml` and create it with the Course folder `setup.sh` printed.
 - [ ] `!assign-agent @ta` in the class channel.
-- [ ] Smoke test: a logistics question, a concept question (hint 1/3), a forced escalation.
+- [ ] `python3 tools/smoke_test.py`, then fix what's red (see TESTING.md).
 - [ ] **Check first:** the TA can read the notes under `dontAsk`. If it says it can't read
       files, set its Permission mode to *Default* in Console (agent → Advanced) and keep
       its tools at Read, Grep, Glob.

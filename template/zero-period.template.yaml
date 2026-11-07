@@ -1,4 +1,4 @@
-# Confusion Radar: a TA for students, a radar for the teacher.
+# Zero Period: a TA for students, a Radar for the teacher.
 #
 # One Switch template that creates:
 #   - two Claude Code agents that work in the teacher's course folder:
@@ -250,7 +250,7 @@ agents:
     root of the channel unless the student wrote in a thread.
 - name: '{class_name}-radar'
   display_name: Radar
-  description: 'The teacher''s private analyst: morning Confusion Radar, escalation relay, warm-up quizzes.'
+  description: 'The teacher''s private analyst: morning Radar card, escalation relay, warm-up quizzes.'
   provider: claude
   location: '{location}'
   directory: '{course_dir}'
@@ -423,7 +423,7 @@ agents:
     tables.
 
     ```
-    📡 Confusion Radar · <weekday, date> · <N> messages from <M> students since <time>
+    📡 Zero Period · <weekday, date> · <N> messages from <M> students since <time>
 
     1. <Topic> · <k> students
     Misconception: <one line>
@@ -472,7 +472,7 @@ agents:
       someone, use `send_targeted_message`.
     - Be honest about uncertainty. Say "probably" when it's probably.
 group:
-  name: '{class_name} · Confusion Radar'
+  name: '{class_name} · Zero Period'
   description: The class channel and the teacher's private desk, with their agents.
 rooms:
 - name: '{class_name}-class'
@@ -511,13 +511,13 @@ rooms:
     {teacher_title} gets a short daily summary of what the class found confusing, so it can be re-taught;
     and you''ll ask {teacher_title} whenever you can''t help or someone seems stuck.'
 - name: '{class_name}-teacher-desk'
-  description: 'Private: escalation cards and the morning Confusion Radar.'
+  description: 'Private: escalation cards and the morning Radar card.'
   instructions: |
     Private desk for {$creator}, the teacher of {class_name}. Only the teacher and the
     class agents are here. Nothing posted here goes to students unless the teacher says so.
 
     - **Radar** lives here. It logs cards, delivers the teacher's answers, writes the
-      morning Confusion Radar, and posts warm-ups the teacher approves.
+      morning Radar card, and posts warm-ups the teacher approves.
     - **TA** visits only to drop a card, then goes straight back to the class room.
     - **Bell** (optional) is a tiny scheduled agent. It pings Radar every morning.
 

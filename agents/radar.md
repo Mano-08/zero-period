@@ -128,7 +128,7 @@ The teacher reads this on a phone at 7 am. Keep it to the lines below, and don't
 tables.
 
 ```
-📡 Confusion Radar · <weekday, date> · <N> messages from <M> students since <time>
+📡 Zero Period · <weekday, date> · <N> messages from <M> students since <time>
 
 1. <Topic> · <k> students
 Misconception: <one line>

@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-07",
+  "topics": ["Base case", "Return values in recursion"],
+  "questions": [
+    {
+      "n": 1,
+      "topic": "Base case",
+      "q": "Which base case should factorial(n) use so that every call works, including factorial(0)?",
+      "options": {
+        "A": "if n == 1: return 1",
+        "B": "if n == 0: return 0",
+        "C": "if n == 0: return 1",
+        "D": "if n == 1: return 0"
+      },
+      "answer": "C",
+      "explain": "The base case is the smallest input, n == 0, not the last number you multiply. With n == 1, factorial(0) calls factorial(-1), factorial(-2)… and ends in a RecursionError. The answer for 0 is 1 (the empty product); returning 0 would make every factorial 0 on the way back up (Notes p.12–13, p.17).",
+      "misconception": "The base case is 'the last number you multiply' (1), or 0! means 'multiply by 0'."
+    },
+    {
+      "n": 2,
+      "topic": "Return values in recursion",
+      "q": "What happens when you run print(length(\"hi\"))?",
+      "code": "def length(s):\n    if s == \"\":\n        return 0\n    1 + length(s[1:])",
+      "options": {
+        "A": "It prints 2",
+        "B": "It raises a TypeError, because the inner call hands back None and 1 + None fails",
+        "C": "It prints 0",
+        "D": "It prints None"
+      },
+      "answer": "B",
+      "explain": "length(\"i\") works out 1 + 0 but never returns it, so it hands back None. Then length(\"hi\") tries 1 + None and raises a TypeError before anything is printed. Computing a value isn't returning it: every path that should produce a value needs a return (Notes p.15, p.8).",
+      "misconception": "Computing (or printing) a value is the same as returning it."
+    },
+    {
+      "n": 3,
+      "topic": "Return values in recursion",
+      "q": "In sum_list([4, 5]) from the notes, sum_list([]) returns 0. Where does that 0 go?",
+      "code": "def sum_list(nums):\n    if nums == []:\n        return 0\n    return nums[0] + sum_list(nums[1:])",
+      "options": {
+        "A": "To sum_list([5]), the call that made it, which uses it to work out 5 + 0",
+        "B": "Straight back to the first call, sum_list([4, 5])",
+        "C": "It is printed on the screen",
+        "D": "Nowhere: reaching the base case ends the whole function"
+      },
+      "answer": "A",
+      "explain": "A return value goes back to the call that asked for it, one level at a time. sum_list([5]) gets 0 and returns 5 + 0 = 5; then sum_list([4, 5]) gets 5 and returns 4 + 5 = 9 (Notes p.15, p.14).",
+      "misconception": "A returned value jumps straight to the first call, or the base case ends everything."
+    }
+  ]
+}

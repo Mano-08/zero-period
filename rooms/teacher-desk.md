@@ -2,7 +2,7 @@ Private desk for {$creator}, the teacher of {class_name}. Only the teacher and t
 class agents are here. Nothing posted here goes to students unless the teacher says so.
 
 - **Radar** lives here. It logs cards, delivers the teacher's answers, writes the
-  morning Confusion Radar, and posts warm-ups the teacher approves.
+  morning Radar card, and posts warm-ups the teacher approves.
 - **TA** visits only to drop a card, then goes straight back to the class room.
 - **Bell** (optional) is a tiny scheduled agent. It pings Radar every morning.
 

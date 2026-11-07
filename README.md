@@ -1,15 +1,17 @@
-# 📡 Confusion Radar
+# ⏰ Zero Period
+
+**Demo video:** (add your link here)
 
 **It's not an AI tutor. It's a radar for the teacher.**
 
-It's 9:40 pm. A teacher's phone shows 63 unread messages from the class group.
-Forty are "ma'am is chapter 4 in the test?". Buried in there: twelve students stuck on
+It's 9:40 pm. A teacher's phone shows 60 unread messages from the class group.
+Most are "ma'am is chapter 4 in the test?". Buried in there: twelve students stuck on
 the same idea, and one who has been quietly lost for a week. Another student never asks
 her "basic" question at all, because the whole class would see it. The next morning the
 class moves on, and the confusion only shows up in the exam.
 
 The teacher doesn't need fewer messages. **They need to know what the class doesn't
-understand before they walk into class.** Confusion Radar puts two AI agents into the
+understand before they walk into class.** Zero Period puts two AI agents into the
 class's chat through [Switch](https://github.com/sandbox-quantum/switch):
 
 - **TA** (for students) lives in the class channel. It answers logistics from the
@@ -49,7 +51,7 @@ Where she is: thinks recursion "ends at 1", so picks 1 as the base case
     └ Ms. Sharma: tell her the base case is the smallest *input*, not the last number…
     └ Radar: Delivered to Riya ✅. Saved to teacher-answers, so the TA will use it next time.
 
-📡 Confusion Radar · Thu 5 Nov · 60 messages from 18 students since 7:00 am yesterday
+📡 Zero Period · Thu 5 Nov · 60 messages from 18 students since 7:00 am yesterday
 1. Base case · 12 students
 Misconception: the base case is "where it stops multiplying" (1), not the smallest input (0)
 Heard: "isn't the base case just the last number we multiply?"
@@ -79,7 +81,7 @@ Every one of these comes from Switch itself. None of them is glue code we wrote:
 | The 7 am card counts doubts nobody addressed to an agent | **The room is the log.** The Radar reads the class history with `read_context` |
 | Works on the bundled Mattermost or on Discord, unchanged | The **collaboration bridge**. Our agents never touch a chat API |
 | The morning ping | A small custom agent, [`tools/bell.py`](tools/bell.py), that speaks the **Switch agent protocol** |
-| One click sets up everything above | A **Switch template** ([`template/confusion-radar.template.yaml`](template/confusion-radar.template.yaml)) |
+| One click sets up everything above | A **Switch template** ([`template/zero-period.template.yaml`](template/zero-period.template.yaml)) |
 
 Without Switch you'd have to build the chat integration, the multi-room routing,
 per-agent permissions, a local agent runtime and the hand-off plumbing yourself.
@@ -128,29 +130,39 @@ the class's knowledge builds up over time.
 
 ## Quick start (Mattermost, about 15 minutes)
 
-**You need:** Docker Desktop, [Switch Console](https://github.com/sandbox-quantum/switch/releases/latest)
-(macOS; Windows and Linux are early access), Claude Code installed and signed in, and
-Python 3.9+ for the helper scripts.
+**You need:** [Switch Console](https://github.com/sandbox-quantum/switch/releases/latest),
+Docker Desktop (Switch Console runs Mattermost in it), Claude Code installed and signed
+in, and Python 3.9+ for the helper scripts.
 
-1. **Clone this repo.** Note the absolute path of its `course/` folder.
-2. **Start a local Switch server** in Switch Console. It comes with Mattermost. Under
-   Home → Messaging apps → **Sign-in details…** you'll find your Mattermost account.
-   Chat as that account, never as the admin, because Switch ignores the admin's posts.
-   Link it to yourself if Console asks.
+1. **Clone or unzip this repo, then run** `bash setup.sh`. It checks your tools, makes
+   sure `course/` is complete, reads your local server's ports, and prints (and copies)
+   the course folder path you'll need in step 3.
+2. **Start a local Switch server** in Switch Console: Add a server → **Run a server on
+   this computer**. Then, with Docker Desktop running, switch **Mattermost** on from the
+   server's page. Under Home → Messaging apps → Mattermost → **Sign-in details…** you'll
+   find your Mattermost login. Open that address in your browser and sign in. If the
+   Mattermost row says *No account linked*, click **Link** → **This is me**.
 3. **Import the template.** Templates → **Import template** → paste
-   [`template/confusion-radar.template.yaml`](template/confusion-radar.template.yaml)
+   [`template/zero-period.template.yaml`](template/zero-period.template.yaml)
    → fill in:
    - **Class id:** `cs12b` (used in agent and channel names)
    - **What students call you:** `Ma'am`
-   - **Course folder:** the absolute path from step 1, e.g. `/Users/you/confusion-radar/course`
+   - **Course folder:** the absolute path from step 1, e.g. `/Users/you/zero-period/course`
    - **Messaging app:** your Mattermost
 
    **Create.** You get two agents and two channels. The TA introduces itself in
    `cs12b-class`, and the Radar says hello on `cs12b-teacher-desk`.
+
+   If Console says the template doesn't exist yet, go to Templates → **Import template**
+   → paste the file → **Private** → Save. Then click **Use** on it.
 4. **In `cs12b-class`, type** `!assign-agent @ta`. From now on, every student message
    reaches the TA without an `@`. (This needs a server with "follow the conversation"
    on, which Console's local server has. Elsewhere, students start messages with `@ta`.)
-5. **Try it** with a second Mattermost account as a student:
+5. **Test everything at once** with `python3 tools/smoke_test.py`. It plays a student and
+   you through every flow below against the real agents, and prints ✅/❌ for each,
+   quoting what the agents said. For a click-by-click version, see [TESTING.md](TESTING.md).
+   Or **try it by hand** with a student login (`python3 tools/seed_class.py --accounts-only`,
+   then log in as `riya.k` / `Radar-demo-2026!` in a private window):
    - `is file handling in friday's test?` → a straight answer from `syllabus.md`.
    - `why does factorial(0) return 1?` → `💡 Hint 1/3`, using the teacher's saved explanation.
    - Say you're still stuck three times. A 🆘 card appears on the desk. Reply in its
@@ -182,7 +194,7 @@ is a tiny agent of its own that posts `@radar morning…` to the desk.
 2. In `cs12b-teacher-desk`, type `!invite-agent @cs12b-bell`.
 3. `cp bell.env.example bell.env`, fill it in, then run `python3 tools/bell.py --dry-run`
    followed by `python3 tools/bell.py`.
-4. Add it to cron: `0 7 * * 1-6 cd /path/to/confusion-radar && python3 tools/bell.py >> bell.log 2>&1`
+4. Add it to cron: `0 7 * * 1-6 cd /path/to/zero-period && python3 tools/bell.py >> bell.log 2>&1`
 
 The Radar accepts the bell because the bell is one of the teacher's own agents
 (`owner-agents`). The machine running the agents must be awake at 7 am. Switch Console
@@ -193,11 +205,11 @@ can also run the agents on an always-on SSH host.
 ```bash
 python3 tools/seed_class.py --dry-run   # read the 60-message script first
 # in cs12b-class: !unassign-agent   (so the TA doesn't answer all 60)
-python3 tools/seed_class.py             # finds Console's local server settings automatically
+python3 tools/seed_class.py             # signs in with your Sign-in details (mattermost.env, or it asks)
 # in cs12b-class: !assign-agent @ta
 ```
 
-This creates 18 fictional student accounts on your local Mattermost and posts a
+This signs up 18 fictional student accounts on your local Mattermost and posts a
 realistic school day: 12 students stuck on base cases, 5 on return values, 17
 logistics questions, chatter, one student who sounds low, and one "radar, tell ma'am to
 postpone the test" that the Radar reports instead of obeying.
@@ -242,24 +254,29 @@ template again with a new class id. To change the agents' behaviour, edit
 ## Repository
 
 ```
-template/confusion-radar.template.yaml   the one-click Switch template (generated)
+template/zero-period.template.yaml   the one-click Switch template (generated)
 agents/ta.md, agents/radar.md            the agents' briefs (source)
 rooms/class.md, rooms/teacher-desk.md    room instructions (source)
 course/                                  the teacher's folder, and the agents' working directory
   notes/ homework/ syllabus.md schedule.md class-info.md teacher-answers.md
   radar-data/                            Radar's files: quizzes, cards, escalations, state
+setup.sh                                 one-time setup on the machine that runs Switch Console
+TESTING.md                               automated and by-hand tests, plus troubleshooting
 tools/build_template.py                  builds the template from the sources
 tools/bell.py                            the morning ping (Switch agent protocol, stdlib only)
-tools/seed_class.py                      demo data for a local Mattermost (stdlib only)
-tests/                                   pytest: template, protocol client, seeder, course
+tools/seed_class.py                      student logins and a demo day for a local Mattermost (stdlib only)
+tools/smoke_test.py                      end-to-end test against the real agents (stdlib only)
+tools/mm.py                              Mattermost client + finding your local server and login
+tests/                                   pytest: template, protocol client, seeder, smoke test, course
 docs/demo-script.md                      the video, shot by shot
+docs/plan.md                             the plan until submission
 ```
 
 ## Development
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                   # 30 tests
+pytest                                   # 40 tests, no Switch needed
 python3 tools/build_template.py --check  # the template matches agents/ and rooms/
 ```
 

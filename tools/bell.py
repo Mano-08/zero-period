@@ -4,7 +4,7 @@
 Switch has no scheduler. An agent acts when something addresses it. The bell is a
 tiny agent of its own that speaks the Switch agent protocol: it posts one message
 into the teacher-desk room ("@radar morning …"), and the Radar wakes up and builds
-the day's Confusion Radar. Run it from cron at 7 am.
+the day's Radar card. Run it from cron at 7 am.
 
 Standard library only, so it runs on any laptop with Python 3.9+.
 
@@ -16,7 +16,7 @@ One-time setup (about 2 minutes):
   4. python3 tools/bell.py --dry-run   then   python3 tools/bell.py
 
 Cron (Mon–Sat, 7:00 am):
-  0 7 * * 1-6  cd /path/to/confusion-radar && /usr/bin/python3 tools/bell.py >> bell.log 2>&1
+  0 7 * * 1-6  cd /path/to/zero-period && /usr/bin/python3 tools/bell.py >> bell.log 2>&1
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV_FILE = ROOT / "bell.env"
-DEFAULT_TEXT = "@radar morning: time for today's Confusion Radar ({date})."
+DEFAULT_TEXT = "@radar morning: time for today's Radar card ({date})."
 TIMEOUT_SECONDS = 20
 
 
@@ -116,7 +116,7 @@ def _request(
             "Authorization": f"Bearer {cfg.api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "confusion-radar-bell/1.0",
+            "User-Agent": "zero-period-bell/1.0",
         },
     )
     try:

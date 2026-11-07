@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Confusion Radar warm-up quiz",
+  "title": "Zero Period warm-up quiz",
   "type": "object",
   "required": ["date", "topics", "questions"],
   "additionalProperties": false,

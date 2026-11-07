@@ -83,7 +83,7 @@ def cfg(base: str, **over) -> bell.Config:
 def test_posts_morning_ping_to_the_desk(server):
     out = bell.ring(cfg(server), dry_run=False, now=datetime(2026, 11, 5, 7, 0))
     assert FakeSwitch.posted == [
-        {"room_id": "!desk:switch", "content": "@radar morning: time for today's Confusion Radar (Thu 05 Nov)."}
+        {"room_id": "!desk:switch", "content": "@radar morning: time for today's Radar card (Thu 05 Nov)."}
     ]
     assert "posted to cs12b-teacher-desk" in out
     assert all(a == f"Bearer {API_KEY}" for a in FakeSwitch.auths)

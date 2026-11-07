@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build the Switch template for Confusion Radar from its readable sources.
+"""Build the Switch template for Zero Period from its readable sources.
 
 The agent briefs (agents/*.md) and room instructions (rooms/*.md) are kept as
 plain Markdown so they can be read and reviewed. Switch Console wants one YAML
-document, so this script inlines them into template/confusion-radar.template.yaml.
+document, so this script inlines them into template/zero-period.template.yaml.
 
     python3 tools/build_template.py           # write the template
     python3 tools/build_template.py --check   # fail if the committed file is stale
@@ -20,10 +20,10 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "template" / "confusion-radar.template.yaml"
+OUT = ROOT / "template" / "zero-period.template.yaml"
 
 HEADER = """\
-# Confusion Radar: a TA for students, a radar for the teacher.
+# Zero Period: a TA for students, a Radar for the teacher.
 #
 # One Switch template that creates:
 #   - two Claude Code agents that work in the teacher's course folder:
@@ -180,7 +180,7 @@ def build() -> dict:
                 "name": radar,
                 "display_name": "Radar",
                 "description": (
-                    "The teacher's private analyst: morning Confusion Radar, "
+                    "The teacher's private analyst: morning Radar card, "
                     "escalation relay, warm-up quizzes."
                 ),
                 "provider": "claude",
@@ -197,7 +197,7 @@ def build() -> dict:
             },
         ],
         "group": {
-            "name": "{class_name} · Confusion Radar",
+            "name": "{class_name} · Zero Period",
             "description": "The class channel and the teacher's private desk, with their agents.",
         },
         "rooms": [
@@ -221,7 +221,7 @@ def build() -> dict:
             },
             {
                 "name": "{class_name}-teacher-desk",
-                "description": "Private: escalation cards and the morning Confusion Radar.",
+                "description": "Private: escalation cards and the morning Radar card.",
                 "instructions": desk_rules,
                 "bridge": "{bridge}",
                 "channel_type": "channel_private",

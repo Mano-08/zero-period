@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import build_template  # noqa: E402
 
-TEMPLATE = ROOT / "template" / "confusion-radar.template.yaml"
+TEMPLATE = ROOT / "template" / "zero-period.template.yaml"
 BUILTINS = {"$creator", "$creator_email", "$date", "$timestamp", "$agents_dir"}
 
 
@@ -98,11 +98,11 @@ def test_server_plans_the_run_and_parses_the_rooms():
 
     machines = [{"id": "m1", "name": "laptop", "state": "online",
                  "providers": [{"provider": "claude", "installed": True, "auth": "ok"}]}]
-    inputs = {"class_name": "cs12b", "course_dir": "/Users/priya/confusion-radar/course", "bridge": "Discord"}
+    inputs = {"class_name": "cs12b", "course_dir": "/Users/priya/zero-period/course", "bridge": "Discord"}
     plan = plan_template(TEMPLATE.read_text(encoding="utf-8"), {}, inputs,
                          builtins={"$creator": "priya"}, machines=machines)
     assert [a.name for a in plan.new_agents] == ["cs12b-ta", "cs12b-radar"]
-    assert {a.directory for a in plan.new_agents} == {"/Users/priya/confusion-radar/course"}
+    assert {a.directory for a in plan.new_agents} == {"/Users/priya/zero-period/course"}
 
     svc = RoomYamlService(room_service=None, resource_service=None, room_store=None, agent_store=None,
                           bridge_store=None, external_user_store=None, room_role_store=None,
